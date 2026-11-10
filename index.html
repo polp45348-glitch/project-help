@@ -1,0 +1,885 @@
+<title>ภาษา C เพื่อนสอนเพื่อน</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: notebook page — a sticky lesson switcher on top, one lesson at a time in a single readable column, code blocks look like a terminal pad */
+:root {
+  --bg: #F3F6F9;
+  --paper: #FFFFFF;
+  --fg: #17212B;
+  --muted: #5A6875;
+  --line: #D9E1E8;
+  --accent: #0E7C86;
+  --accent-soft: #DDF1F2;
+  --mark: #FFE8A3;
+  --code-bg: #1C2630;
+  --code-fg: #E6EDF3;
+  --tok-kw: #7FD1D8;
+  --tok-str: #F2C779;
+  --tok-com: #7E8C99;
+  --tok-num: #F59E8B;
+  --tok-pre: #C6A6F5;
+  --ok: #1E7A45;
+  --ok-soft: #DDF3E6;
+  --bad: #B3261E;
+  --bad-soft: #FBE3E1;
+  --font-display: "Mitr", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11181F; --paper: #18212A; --fg: #E4EAF0; --muted: #98A6B3; --line: #2B3742;
+    --accent: #4CC3CC; --accent-soft: #163A3F; --mark: #5A4A14;
+    --code-bg: #0B1116; --code-fg: #E6EDF3;
+    --ok: #5FD394; --ok-soft: #153325; --bad: #FF8A80; --bad-soft: #3A1C1A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11181F; --paper: #18212A; --fg: #E4EAF0; --muted: #98A6B3; --line: #2B3742;
+  --accent: #4CC3CC; --accent-soft: #163A3F; --mark: #5A4A14;
+  --code-bg: #0B1116; --code-fg: #E6EDF3;
+  --ok: #5FD394; --ok-soft: #153325; --bad: #FF8A80; --bad-soft: #3A1C1A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 17px; line-height: 1.75;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.wrap {
+  max-width: 760px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+header.top { background: var(--paper); border-bottom: 1px solid var(--line); }
+header.top .wrap { padding-block: 36px 24px; display: grid; gap: 8px; }
+.eyebrow { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: .04em; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(28px, 6vw, 40px); line-height: 1.25; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; max-width: 60ch; }
+
+nav.tabs {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--paper); border-bottom: 1px solid var(--line);
+}
+nav.tabs .wrap { display: flex; gap: 6px; padding-block: 10px; overflow-x: auto; align-items: center; }
+nav.tabs a {
+  flex: none; text-decoration: none; color: var(--muted);
+  font-family: var(--font-display); font-size: 15px;
+  padding: 6px 14px; border-radius: 999px; border: 1px solid transparent;
+  display: inline-flex; gap: 8px; align-items: center;
+}
+nav.tabs a:hover { color: var(--fg); border-color: var(--line); }
+nav.tabs a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+nav.tabs a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.score { margin-left: auto; flex: none; font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.dot.done { background: var(--ok); }
+
+main .wrap { padding-block: 32px 64px; }
+section.lesson { display: grid; gap: 20px; }
+section.lesson > * { min-width: 0; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 30px; line-height: 1.3; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 500; font-size: 21px; line-height: 1.4; margin: 16px 0 0; text-wrap: balance; }
+p { margin: 0; }
+.goal { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; }
+.goal strong { font-family: var(--font-display); font-weight: 500; }
+.goal ul { margin: 6px 0 0; padding-left: 22px; }
+code.i { font-family: var(--font-mono); font-size: .88em; background: var(--accent-soft); color: var(--fg); padding: 1px 6px; border-radius: 4px; }
+mark { background: var(--mark); color: inherit; padding: 0 3px; border-radius: 3px; }
+
+.code { background: var(--code-bg); color: var(--code-fg); border-radius: 10px; overflow: hidden; }
+.code .bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px 6px 14px; border-bottom: 1px solid #2E3B47; }
+.code .fname { font-family: var(--font-mono); font-size: 12.5px; color: #9FB0BF; }
+.code button.copy {
+  font: 500 12.5px var(--font-body); color: #CFE3E8; background: transparent;
+  border: 1px solid #3A4A57; border-radius: 6px; padding: 2px 10px; cursor: pointer;
+}
+.code button.copy:hover { border-color: #7FD1D8; }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 14.5px; line-height: 1.65; tab-size: 4; }
+.tok-kw { color: var(--tok-kw); } .tok-str { color: var(--tok-str); } .tok-com { color: var(--tok-com); font-style: italic; }
+.tok-num { color: var(--tok-num); } .tok-pre { color: var(--tok-pre); }
+
+.out { border: 1px dashed var(--line); border-radius: 10px; background: var(--paper); }
+.out .lbl { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding: 6px 14px 0; letter-spacing: .04em; }
+.out pre { margin: 0; padding: 4px 14px 12px; font-family: var(--font-mono); font-size: 14.5px; overflow-x: auto; }
+
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-display); font-weight: 500; color: var(--muted); font-size: 14px; }
+td code { font-family: var(--font-mono); font-size: 14px; }
+
+.tip { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; color: var(--fg); }
+.tip b { font-family: var(--font-display); font-weight: 500; color: var(--accent); }
+
+.quiz { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 18px; }
+.q { display: grid; gap: 10px; }
+.q + .q { border-top: 1px solid var(--line); padding-top: 18px; }
+.q .qt { font-weight: 500; }
+.q .opts { display: grid; gap: 8px; }
+.q button.opt {
+  text-align: left; font: inherit; font-size: 16px; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 9px 14px; cursor: pointer; display: flex; gap: 10px; align-items: baseline;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .k { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.q button.opt.right { background: var(--ok-soft); border-color: var(--ok); }
+.q button.opt.wrong { background: var(--bad-soft); border-color: var(--bad); }
+.q .fb { font-size: 15.5px; padding: 8px 12px; border-radius: 8px; }
+.q .fb.ok { background: var(--ok-soft); color: var(--ok); }
+.q .fb.no { background: var(--bad-soft); color: var(--bad); }
+.q .fb span { color: var(--fg); }
+
+details.ex { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+details.ex + details.ex { margin-top: -8px; }
+details.ex summary { cursor: pointer; font-family: var(--font-display); font-weight: 500; }
+details.ex .body { display: grid; gap: 12px; margin-top: 10px; }
+details.ex details summary { font-family: var(--font-body); font-weight: 500; color: var(--accent); font-size: 15.5px; }
+details.ex details[open] summary { margin-bottom: 10px; }
+
+.next { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.next a {
+  text-decoration: none; font-family: var(--font-display); font-size: 16px;
+  color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 16px;
+}
+.next a:hover { background: var(--accent-soft); }
+
+.setup { display: grid; gap: 10px; }
+.setup ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.setup a { color: var(--accent); }
+
+footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 20px; }
+
+/* in-page runner */
+.code .acts { display: flex; gap: 6px; }
+.code button.run {
+  font: 600 12.5px var(--font-body); color: var(--code-bg); background: var(--tok-kw);
+  border: 1px solid var(--tok-kw); border-radius: 6px; padding: 2px 12px; cursor: pointer;
+}
+.runner { border-top: 1px solid #2E3B47; padding: 12px; display: grid; gap: 10px; }
+.runner label { font-size: 13px; color: #9FB0BF; display: grid; gap: 4px; }
+.runner textarea {
+  width: 100%; font-family: var(--font-mono); font-size: 15px; line-height: 1.55;
+  background: #111920; color: var(--code-fg); border: 1px solid #3A4A57; border-radius: 8px;
+  padding: 10px; resize: vertical; tab-size: 4;
+}
+.runner textarea:focus { outline: 2px solid var(--tok-kw); outline-offset: 0; }
+.runner .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.runner button.go {
+  font: 600 15px var(--font-display); color: var(--code-bg); background: var(--tok-kw);
+  border: 0; border-radius: 8px; padding: 10px 22px; cursor: pointer; min-height: 44px;
+}
+.runner button.go:disabled { opacity: .6; cursor: wait; }
+.runner button.reset { font: 500 14px var(--font-body); color: #CFE3E8; background: transparent; border: 1px solid #3A4A57; border-radius: 8px; padding: 10px 14px; min-height: 44px; cursor: pointer; }
+.runner .status { font-size: 13px; color: #9FB0BF; }
+.runner pre.result { margin: 0; background: #0B1116; border-radius: 8px; padding: 10px 12px; min-height: 2.6em; white-space: pre-wrap; word-break: break-word; font-size: 14.5px; }
+.runner pre.result.err { color: #FF9A8F; }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  h2 { font-size: 25px; }
+  .score { display: none; }
+  .code pre { font-size: 13px; padding: 12px; }
+  .code button.copy, .code button.run { padding: 6px 12px; font-size: 13.5px; }
+  nav.tabs a { padding: 8px 14px; }
+  .q button.opt { padding: 12px 14px; }
+  details.ex summary { padding-block: 4px; }
+  th, td { padding: 8px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  section.lesson:not([hidden]) { animation: rise .25s ease-out; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: none; } }
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">#include &lt;stdio.h&gt;</div>
+    <h1>ภาษา C เพื่อนสอนเพื่อน</h1>
+    <p class="lede">3 บทสั้นๆ สำหรับคนที่ไม่เคยเขียนโปรแกรมมาก่อน อ่านแต่ละบทประมาณ 15 นาที มีตัวอย่างให้ก๊อปไปรัน ควิซให้ลองตอบ และโจทย์ให้ลงมือเขียนเอง</p>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="เลือกบทเรียน">
+  <div class="wrap">
+    <a href="#start" data-view="start">เริ่มต้น</a>
+    <a href="#lesson-1" data-view="lesson-1"><span class="dot" data-dot="1"></span>บทที่ 1</a>
+    <a href="#lesson-2" data-view="lesson-2"><span class="dot" data-dot="2"></span>บทที่ 2</a>
+    <a href="#lesson-3" data-view="lesson-3"><span class="dot" data-dot="3"></span>บทที่ 3</a>
+    <span class="score" id="score">ตอบถูก 0/9</span>
+  </div>
+</nav>
+
+<main>
+<div class="wrap">
+
+<!-- ============ START ============ -->
+<section class="lesson" id="start" data-view="start">
+  <h2>ก่อนเริ่ม: รันโค้ดได้ในหน้านี้เลย</h2>
+  <p>ใช้มือถืออย่างเดียวก็เรียนได้ครบ กล่องโค้ดทุกกล่องในบทเรียนมีปุ่ม <mark>▶ รัน</mark> กดแล้วจะได้ช่องให้แก้โค้ดและรันดูผลได้ทันที ไม่ต้องติดตั้งอะไร ลองกดกล่องข้างล่างนี้ดู</p>
+  <div class="code"><div class="bar"><span class="fname">try.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    printf("สวัสดี ฉันรันบนมือถือ!\n");
+    return 0;
+}</code></pre></div>
+  <p class="tip"><b>ถ้าโปรแกรมต้องรับค่า</b> (มีคำสั่ง <code class="i">scanf</code>) จะมีช่อง "ข้อมูลที่พิมพ์ให้โปรแกรม" ให้ใส่ค่าไว้ก่อนกดรัน ถ้ามีหลายค่าให้ขึ้นบรรทัดใหม่ทีละค่า</p>
+  <p>ภาษา C ปกติต้อง <mark>คอมไพล์</mark> ก่อนรัน คือแปลงโค้ดที่เราเขียน (ไฟล์ <code class="i">.c</code>) ให้เป็นโปรแกรมที่คอมพิวเตอร์เข้าใจ ตัวรันในหน้านี้ทำขั้นตอนนั้นให้แล้ว แต่รองรับแค่คำสั่งพื้นฐาน ถ้าเจอโค้ดที่รันไม่ได้ ให้ลองบนเว็บ <a href="https://www.onlinegdb.com/online_c_compiler" target="_blank" rel="noopener">onlinegdb.com/online_c_compiler</a> แทน (เปิดในมือถือได้)</p>
+
+  <details class="ex"><summary>มีคอม Windows? ติดตั้ง Dev-C++ ไว้เขียนในเครื่อง</summary><div class="body">
+  <div class="setup">
+    <ol>
+      <li>โหลด <b>Embarcadero Dev-C++</b> จาก <a href="https://github.com/Embarcadero/Dev-Cpp/releases" target="_blank" rel="noopener">github.com/Embarcadero/Dev-Cpp/releases</a> เลือกไฟล์ที่ลงท้ายว่า <code class="i">Setup.exe</code> แล้วติดตั้งตามปกติ (มีคอมไพเลอร์มาให้ในตัว)</li>
+      <li>เปิดโปรแกรม ไปที่ <b>File → New → Source File</b></li>
+      <li>วางโค้ด แล้วกด <b>File → Save As</b> ตั้งชื่อให้ลงท้ายด้วย <code class="i">.c</code> เช่น <code class="i">hello.c</code></li>
+      <li>กด <b>F11</b> เพื่อคอมไพล์และรันในทีเดียว จะมีหน้าต่างดำเด้งขึ้นมาแสดงผล</li>
+    </ol>
+  </div>
+  <p class="tip"><b>ภาษาไทยขึ้นเป็นตัวมั่ว?</b> หน้าต่างดำของ Windows ไม่ได้ตั้งให้แสดงภาษาไทยไว้ตั้งแต่แรก ให้เพิ่ม 2 บรรทัดที่มีเครื่องหมาย <code class="i">// เพิ่ม</code> ตามตัวอย่างด้านล่าง แล้วรันใหม่ ถ้ายังมั่วอยู่ ให้ไปที่ <b>Tools → Editor Options</b> ติ๊กให้บันทึกไฟล์เป็น UTF-8 หรือจะเปลี่ยนข้อความเป็นภาษาอังกฤษไปเลยก็ได้</p>
+  <div class="code norun"><div class="bar"><span class="fname">hello.c (สำหรับ Windows)</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+#include &lt;windows.h&gt;         // เพิ่ม
+
+int main() {
+    SetConsoleOutputCP(65001);  // เพิ่ม: ให้หน้าจอแสดงภาษาไทยได้
+    printf("สวัสดีชาวโลก\n");
+    return 0;
+}</code></pre></div>
+  <p>บนมือถือและเว็บ onlinegdb ภาษาไทยแสดงได้อยู่แล้ว ไม่ต้องเพิ่มอะไร</p>
+  </div></details>
+
+  <div class="next"><span></span><a href="#lesson-1">ไปบทที่ 1 →</a></div>
+</section>
+
+<!-- ============ LESSON 1 ============ -->
+<section class="lesson" id="lesson-1" data-view="lesson-1" hidden>
+  <div class="eyebrow">บทที่ 1 จาก 3</div>
+  <h2>โปรแกรมแรก: สั่งให้คอมพิวเตอร์พูด</h2>
+  <div class="goal"><strong>จบบทนี้แล้วจะ</strong>
+    <ul>
+      <li>รู้ว่าโปรแกรมภาษา C หน้าตาเป็นยังไง</li>
+      <li>ใช้ <code class="i">printf</code> พิมพ์ข้อความออกหน้าจอได้</li>
+      <li>อ่าน error ที่เจอบ่อยที่สุดออก</li>
+    </ul>
+  </div>
+
+  <p>โปรแกรมแรกของทุกคนคือการพิมพ์คำว่า Hello world ออกหน้าจอ ลองดูโค้ดนี้ก่อน ยังไม่ต้องเข้าใจทุกบรรทัด</p>
+  <div class="code"><div class="bar"><span class="fname">hello.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    printf("Hello world\n");
+    return 0;
+}</code></pre></div>
+  <div class="out"><div class="lbl">ผลลัพธ์</div><pre>Hello world</pre></div>
+
+  <h3>แยกทีละบรรทัด</h3>
+  <div class="table-wrap"><table>
+    <tr><th>โค้ด</th><th>ความหมาย</th></tr>
+    <tr><td><code>#include &lt;stdio.h&gt;</code></td><td>ขอยืมชุดคำสั่งเรื่องรับ-แสดงผล (standard input/output) มาใช้ ถ้าไม่มีบรรทัดนี้ จะใช้ <code>printf</code> ไม่ได้</td></tr>
+    <tr><td><code>int main() { ... }</code></td><td>จุดเริ่มต้นของโปรแกรม คอมพิวเตอร์จะเริ่มทำงานจากโค้ดในวงเล็บปีกกา <code>{ }</code> ของ main เสมอ</td></tr>
+    <tr><td><code>printf("...");</code></td><td>พิมพ์ข้อความในเครื่องหมายคำพูดออกหน้าจอ</td></tr>
+    <tr><td><code>\n</code></td><td>ขึ้นบรรทัดใหม่ (n มาจาก new line)</td></tr>
+    <tr><td><code>;</code></td><td>จบคำสั่ง เหมือนจุดฟูลสต็อปในภาษาอังกฤษ ทุกคำสั่งต้องมี</td></tr>
+    <tr><td><code>return 0;</code></td><td>บอกระบบว่าโปรแกรมจบแบบปกติ ไม่มีปัญหา</td></tr>
+  </table></div>
+
+  <h3>พิมพ์หลายบรรทัด</h3>
+  <p>ใช้ <code class="i">printf</code> กี่ครั้งก็ได้ แต่ถ้าลืม <code class="i">\n</code> ข้อความจะต่อกันเป็นบรรทัดเดียว</p>
+  <div class="code"><div class="bar"><span class="fname">intro.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    // บรรทัดที่ขึ้นต้นด้วย // คือคอมเมนต์ คอมพิวเตอร์จะข้ามไป
+    printf("สวัสดี ");
+    printf("ฉันชื่อ C\n");
+    printf("ยินดีที่ได้รู้จัก\n");
+    return 0;
+}</code></pre></div>
+  <div class="out"><div class="lbl">ผลลัพธ์</div><pre>สวัสดี ฉันชื่อ C
+ยินดีที่ได้รู้จัก</pre></div>
+
+  <h3>Error ที่ทุกคนต้องเจอ</h3>
+  <p>ถ้าลืม <code class="i">;</code> ท้ายคำสั่ง ตอนคอมไพล์จะเจอข้อความประมาณนี้</p>
+  <div class="out"><div class="lbl">ข้อความ error</div><pre>hello.c:4:30: error: expected ';' before 'return'</pre></div>
+  <p class="tip"><b>อ่าน error ยังไง</b> <code class="i">hello.c:4:30</code> แปลว่า ไฟล์ hello.c บรรทัดที่ 4 ตัวอักษรที่ 30 ไปดูตรงนั้น แล้วอ่านข้อความต่อท้าย ในที่นี้คือ "คาดว่าจะเจอ ; ก่อนคำว่า return"</p>
+
+  <h3>ควิซ</h3>
+  <div class="quiz" data-lesson="1"></div>
+
+  <h3>ลงมือทำ</h3>
+  <details class="ex"><summary>โจทย์ 1.1 แนะนำตัวเอง</summary><div class="body">
+    <p>เขียนโปรแกรมพิมพ์ชื่อเล่น อายุ และของที่ชอบ แยกเป็น 3 บรรทัด</p>
+    <details><summary>ดูเฉลย</summary>
+    <div class="code"><div class="bar"><span class="fname">me.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    printf("ชื่อเล่น: ต้น\n");
+    printf("อายุ: 20\n");
+    printf("ชอบ: ชานมไข่มุก\n");
+    return 0;
+}</code></pre></div></details>
+  </div></details>
+  <details class="ex"><summary>โจทย์ 1.2 วาดรูปด้วยตัวอักษร</summary><div class="body">
+    <p>ใช้ <code class="i">printf</code> วาดสามเหลี่ยมจากเครื่องหมาย <code class="i">*</code> สูง 4 ชั้น</p>
+    <div class="out"><div class="lbl">ผลลัพธ์ที่ต้องการ</div><pre>*
+**
+***
+****</pre></div>
+    <details><summary>ดูเฉลย</summary>
+    <div class="code"><div class="bar"><span class="fname">triangle.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    printf("*\n");
+    printf("**\n");
+    printf("***\n");
+    printf("****\n");
+    return 0;
+}</code></pre></div>
+    <p class="tip"><b>ชวนคิด</b> ถ้าต้องวาดสูง 100 ชั้นล่ะ? บทที่ 3 มีวิธีที่ไม่ต้องพิมพ์ 100 บรรทัด</p></details>
+  </div></details>
+
+  <div class="next"><a href="#start">← เริ่มต้น</a><a href="#lesson-2">บทที่ 2 →</a></div>
+</section>
+
+<!-- ============ LESSON 2 ============ -->
+<section class="lesson" id="lesson-2" data-view="lesson-2" hidden>
+  <div class="eyebrow">บทที่ 2 จาก 3</div>
+  <h2>ตัวแปร: กล่องเก็บข้อมูล</h2>
+  <div class="goal"><strong>จบบทนี้แล้วจะ</strong>
+    <ul>
+      <li>สร้างตัวแปรเก็บตัวเลขและตัวอักษรได้</li>
+      <li>เอาค่าในตัวแปรไปพิมพ์ด้วย <code class="i">printf</code></li>
+      <li>รับค่าจากคีย์บอร์ดด้วย <code class="i">scanf</code> และคำนวณเลขได้</li>
+    </ul>
+  </div>
+
+  <p>ตัวแปรคือกล่องที่มีชื่อ เอาไว้เก็บข้อมูล ในภาษา C ต้องบอกก่อนว่ากล่องนี้เก็บข้อมูล<mark>ชนิด</mark>ไหน</p>
+  <div class="table-wrap"><table>
+    <tr><th>ชนิด</th><th>เก็บอะไร</th><th>ตัวอย่าง</th><th>ใน printf ใช้</th></tr>
+    <tr><td><code>int</code></td><td>จำนวนเต็ม</td><td><code>int age = 20;</code></td><td><code>%d</code></td></tr>
+    <tr><td><code>float</code></td><td>ทศนิยม</td><td><code>float height = 172.5;</code></td><td><code>%f</code></td></tr>
+    <tr><td><code>char</code></td><td>ตัวอักษร 1 ตัว</td><td><code>char grade = 'A';</code></td><td><code>%c</code></td></tr>
+  </table></div>
+
+  <div class="code"><div class="bar"><span class="fname">vars.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int age = 20;
+    float height = 172.5;
+    char grade = 'A';
+
+    printf("อายุ %d ปี\n", age);
+    printf("สูง %.1f ซม.\n", height);   // %.1f = ทศนิยม 1 ตำแหน่ง
+    printf("เกรด %c\n", grade);
+
+    age = age + 1;                       // เปลี่ยนค่าในกล่องได้
+    printf("ปีหน้าจะอายุ %d ปี\n", age);
+    return 0;
+}</code></pre></div>
+  <div class="out"><div class="lbl">ผลลัพธ์</div><pre>อายุ 20 ปี
+สูง 172.5 ซม.
+เกรด A
+ปีหน้าจะอายุ 21 ปี</pre></div>
+  <p class="tip"><b>สังเกต</b> <code class="i">%d</code> ในข้อความเป็นเหมือนช่องว่าง แล้วค่าของตัวแปรที่อยู่หลังเครื่องหมายจุลภาคจะถูกเติมลงไปตามลำดับ</p>
+
+  <h3>คำนวณเลข</h3>
+  <div class="table-wrap"><table>
+    <tr><th>เครื่องหมาย</th><th>ความหมาย</th><th>ตัวอย่าง</th><th>ผล</th></tr>
+    <tr><td><code>+ - *</code></td><td>บวก ลบ คูณ</td><td><code>3 * 4</code></td><td><code>12</code></td></tr>
+    <tr><td><code>/</code></td><td>หาร</td><td><code>7 / 2</code></td><td><code>3</code> (!)</td></tr>
+    <tr><td><code>%</code></td><td>เศษจากการหาร</td><td><code>7 % 2</code></td><td><code>1</code></td></tr>
+  </table></div>
+  <p class="tip"><b>กับดัก</b> <code class="i">7 / 2</code> ได้ <code class="i">3</code> ไม่ใช่ 3.5 เพราะ int หาร int ได้ int ส่วนทศนิยมโดนตัดทิ้ง ถ้าอยากได้ 3.5 ให้เขียน <code class="i">7.0 / 2</code></p>
+
+  <h3>รับค่าจากคนใช้งาน</h3>
+  <p><code class="i">scanf</code> ทำตรงข้ามกับ printf คือรอให้คนพิมพ์ แล้วเอาค่านั้นใส่ตัวแปร อย่าลืมเครื่องหมาย <mark><code class="i">&amp;</code></mark> หน้าชื่อตัวแปร</p>
+  <div class="code"><div class="bar"><span class="fname">plus.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int a, b;
+
+    printf("ใส่เลขตัวแรก: ");
+    scanf("%d", &amp;a);
+    printf("ใส่เลขตัวที่สอง: ");
+    scanf("%d", &amp;b);
+
+    printf("%d + %d = %d\n", a, b, a + b);
+    return 0;
+}</code></pre></div>
+  <div class="out"><div class="lbl">ผลลัพธ์ (ตัวเลขคือที่เราพิมพ์เอง)</div><pre>ใส่เลขตัวแรก: 8
+ใส่เลขตัวที่สอง: 5
+8 + 5 = 13</pre></div>
+  <p class="tip"><b>ทำไมต้องมี &amp;</b> <code class="i">&amp;a</code> แปลว่า "ที่อยู่ของกล่อง a" scanf ต้องรู้ว่ากล่องอยู่ตรงไหนถึงจะเอาค่าไปใส่ได้ ตอนนี้จำไว้ก่อนว่า scanf ต้องมี &amp; (ยกเว้นตอนรับข้อความ ซึ่งจะเจอทีหลัง)</p>
+
+  <h3>ควิซ</h3>
+  <div class="quiz" data-lesson="2"></div>
+
+  <h3>ลงมือทำ</h3>
+  <details class="ex"><summary>โจทย์ 2.1 คำนวณอายุ</summary><div class="body">
+    <p>รับปี พ.ศ. ที่เกิด แล้วบอกว่าปีนี้ (พ.ศ. 2569) อายุเท่าไร</p>
+    <div class="out"><div class="lbl">ตัวอย่าง</div><pre>เกิดปี พ.ศ.: 2549
+ปีนี้คุณอายุ 20 ปี</pre></div>
+    <details><summary>ดูเฉลย</summary>
+    <div class="code"><div class="bar"><span class="fname">age.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int born;
+    printf("เกิดปี พ.ศ.: ");
+    scanf("%d", &amp;born);
+    printf("ปีนี้คุณอายุ %d ปี\n", 2569 - born);
+    return 0;
+}</code></pre></div></details>
+  </div></details>
+  <details class="ex"><summary>โจทย์ 2.2 แปลงนาทีเป็นชั่วโมง</summary><div class="body">
+    <p>รับจำนวนนาที แล้วบอกว่าเป็นกี่ชั่วโมงกี่นาที ใบ้: ใช้ <code class="i">/</code> กับ <code class="i">%</code></p>
+    <div class="out"><div class="lbl">ตัวอย่าง</div><pre>กี่นาที: 135
+= 2 ชั่วโมง 15 นาที</pre></div>
+    <details><summary>ดูเฉลย</summary>
+    <div class="code"><div class="bar"><span class="fname">time.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int minutes;
+    printf("กี่นาที: ");
+    scanf("%d", &amp;minutes);
+    printf("= %d ชั่วโมง %d นาที\n", minutes / 60, minutes % 60);
+    return 0;
+}</code></pre></div></details>
+  </div></details>
+
+  <div class="next"><a href="#lesson-1">← บทที่ 1</a><a href="#lesson-3">บทที่ 3 →</a></div>
+</section>
+
+<!-- ============ LESSON 3 ============ -->
+<section class="lesson" id="lesson-3" data-view="lesson-3" hidden>
+  <div class="eyebrow">บทที่ 3 จาก 3</div>
+  <h2>ตัดสินใจและทำซ้ำ: if กับ loop</h2>
+  <div class="goal"><strong>จบบทนี้แล้วจะ</strong>
+    <ul>
+      <li>ให้โปรแกรมเลือกทำต่างกันตามเงื่อนไขด้วย <code class="i">if / else</code></li>
+      <li>สั่งทำซ้ำหลายรอบด้วย <code class="i">for</code> และ <code class="i">while</code></li>
+    </ul>
+  </div>
+
+  <h3>if: ถ้า... ให้ทำ...</h3>
+  <div class="code"><div class="bar"><span class="fname">grade.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int score;
+    printf("คะแนนสอบ: ");
+    scanf("%d", &amp;score);
+
+    if (score &gt;= 80) {
+        printf("ได้เกรด A\n");
+    } else if (score &gt;= 50) {
+        printf("ผ่าน\n");
+    } else {
+        printf("ไม่ผ่าน สู้ใหม่นะ\n");
+    }
+    return 0;
+}</code></pre></div>
+  <p>โปรแกรมจะเช็คเงื่อนไขจากบนลงล่าง เจออันไหนจริงก่อนก็ทำอันนั้นอันเดียวแล้วข้ามที่เหลือ ถ้าไม่จริงสักอัน จะทำใน <code class="i">else</code></p>
+
+  <div class="table-wrap"><table>
+    <tr><th>เครื่องหมาย</th><th>ความหมาย</th></tr>
+    <tr><td><code>==</code></td><td>เท่ากับ (สองตัว! ตัวเดียว <code>=</code> คือการใส่ค่า)</td></tr>
+    <tr><td><code>!=</code></td><td>ไม่เท่ากับ</td></tr>
+    <tr><td><code>&gt;  &lt;  &gt;=  &lt;=</code></td><td>มากกว่า น้อยกว่า มากกว่าหรือเท่ากับ น้อยกว่าหรือเท่ากับ</td></tr>
+    <tr><td><code>&amp;&amp;</code></td><td>และ (ต้องจริงทั้งคู่)</td></tr>
+    <tr><td><code>||</code></td><td>หรือ (จริงอย่างใดอย่างหนึ่งก็พอ)</td></tr>
+  </table></div>
+
+  <h3>for: ทำซ้ำตามจำนวนรอบ</h3>
+  <div class="code"><div class="bar"><span class="fname">count.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    for (int i = 1; i &lt;= 5; i++) {
+        printf("รอบที่ %d\n", i);
+    }
+    return 0;
+}</code></pre></div>
+  <div class="out"><div class="lbl">ผลลัพธ์</div><pre>รอบที่ 1
+รอบที่ 2
+รอบที่ 3
+รอบที่ 4
+รอบที่ 5</pre></div>
+  <p>ในวงเล็บของ <code class="i">for</code> มี 3 ส่วนคั่นด้วย <code class="i">;</code></p>
+  <div class="table-wrap"><table>
+    <tr><th>ส่วน</th><th>ความหมาย</th></tr>
+    <tr><td><code>int i = 1</code></td><td>เริ่มนับที่ 1 (ทำครั้งเดียวตอนเริ่ม)</td></tr>
+    <tr><td><code>i &lt;= 5</code></td><td>ทำต่อไปเรื่อยๆ ตราบใดที่ยังจริง</td></tr>
+    <tr><td><code>i++</code></td><td>จบแต่ละรอบให้เพิ่ม i ขึ้น 1</td></tr>
+  </table></div>
+
+  <h3>while: ทำซ้ำจนกว่าเงื่อนไขจะเป็นเท็จ</h3>
+  <p>ใช้ตอนที่ไม่รู้ล่วงหน้าว่าต้องทำกี่รอบ เช่น ให้ทายเลขจนกว่าจะถูก</p>
+  <div class="code"><div class="bar"><span class="fname">guess.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int secret = 7;
+    int guess = 0;
+
+    while (guess != secret) {
+        printf("ทายเลข 1-10: ");
+        scanf("%d", &amp;guess);
+        if (guess &lt; secret) printf("น้อยไป\n");
+        if (guess &gt; secret) printf("มากไป\n");
+    }
+    printf("ถูกต้อง!\n");
+    return 0;
+}</code></pre></div>
+  <p class="tip"><b>ระวัง loop ไม่รู้จบ</b> ถ้าเงื่อนไขไม่มีวันเป็นเท็จ โปรแกรมจะวนไปตลอด กด <code class="i">Ctrl + C</code> ใน Terminal เพื่อหยุด</p>
+
+  <h3>ควิซ</h3>
+  <div class="quiz" data-lesson="3"></div>
+
+  <h3>ลงมือทำ</h3>
+  <details class="ex"><summary>โจทย์ 3.1 สูตรคูณ</summary><div class="body">
+    <p>รับเลข 1 ตัว แล้วพิมพ์สูตรคูณแม่นั้นตั้งแต่ ×1 ถึง ×12</p>
+    <div class="out"><div class="lbl">ตัวอย่าง</div><pre>แม่: 3
+3 x 1 = 3
+3 x 2 = 6
+...
+3 x 12 = 36</pre></div>
+    <details><summary>ดูเฉลย</summary>
+    <div class="code"><div class="bar"><span class="fname">table.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int n;
+    printf("แม่: ");
+    scanf("%d", &amp;n);
+    for (int i = 1; i &lt;= 12; i++) {
+        printf("%d x %d = %d\n", n, i, n * i);
+    }
+    return 0;
+}</code></pre></div></details>
+  </div></details>
+  <details class="ex"><summary>โจทย์ 3.2 เลขคู่หรือเลขคี่</summary><div class="body">
+    <p>รับเลข 1 ตัว แล้วบอกว่าเป็นเลขคู่หรือเลขคี่ ใบ้: เลขคู่หารด้วย 2 แล้วเหลือเศษเท่าไร?</p>
+    <details><summary>ดูเฉลย</summary>
+    <div class="code"><div class="bar"><span class="fname">evenodd.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int n;
+    printf("ใส่เลข: ");
+    scanf("%d", &amp;n);
+    if (n % 2 == 0) {
+        printf("%d เป็นเลขคู่\n", n);
+    } else {
+        printf("%d เป็นเลขคี่\n", n);
+    }
+    return 0;
+}</code></pre></div></details>
+  </div></details>
+  <details class="ex"><summary>โจทย์ 3.3 (ท้าทาย) สามเหลี่ยมกี่ชั้นก็ได้</summary><div class="body">
+    <p>กลับไปที่โจทย์ 1.2 คราวนี้ให้รับจำนวนชั้นจากคนใช้งาน ใบ้: ใช้ <code class="i">for</code> ซ้อนกัน 2 ชั้น ตัวนอกนับชั้น ตัวในพิมพ์ <code class="i">*</code></p>
+    <details><summary>ดูเฉลย</summary>
+    <div class="code"><div class="bar"><span class="fname">triangle2.c</span><button class="copy" type="button">คัดลอก</button></div><pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int rows;
+    printf("กี่ชั้น: ");
+    scanf("%d", &amp;rows);
+    for (int r = 1; r &lt;= rows; r++) {
+        for (int c = 1; c &lt;= r; c++) {
+            printf("*");
+        }
+        printf("\n");
+    }
+    return 0;
+}</code></pre></div></details>
+  </div></details>
+
+  <div class="next"><a href="#lesson-2">← บทที่ 2</a><a href="#start">กลับหน้าแรก</a></div>
+</section>
+
+</div>
+</main>
+
+<footer><div class="wrap">ทำไว้ให้เพื่อนลองเรียน ตอบควิซแล้วความคืบหน้าจะจำไว้ในเบราว์เซอร์ของคุณเอง</div></footer>
+
+<script>
+(function () {
+  // ---------- quiz data ----------
+  var QUIZ = {
+    1: [
+      { q: "ถ้าลบบรรทัด #include <stdio.h> ออก จะเกิดอะไรขึ้น?",
+        o: ["โปรแกรมรันได้ปกติ", "ใช้ printf ไม่ได้ คอมไพล์มีปัญหา", "ข้อความจะไม่ขึ้นบรรทัดใหม่"], a: 1,
+        why: "printf อยู่ในชุดคำสั่ง stdio.h ต้อง include ก่อนถึงจะใช้ได้" },
+      { q: "printf(\"A\"); printf(\"B\\n\"); printf(\"C\"); จะแสดงผลอย่างไร?",
+        o: ["A B C แยกบรรทัดละตัว", "AB แล้วขึ้นบรรทัดใหม่เป็น C", "ABC บรรทัดเดียว"], a: 1,
+        why: "มี \\n แค่หลัง B เลยขึ้นบรรทัดใหม่แค่ตรงนั้น" },
+      { q: "error: expected ';' before 'return' บอกว่าเราลืมอะไร?",
+        o: ["ลืมใส่ ; ท้ายคำสั่งก่อน return", "ลืมเขียน return", "ลืมวงเล็บปีกกา"], a: 0,
+        why: "คอมไพเลอร์คาดว่าจะเจอ ; แต่ดันเจอ return ก่อน แปลว่าบรรทัดก่อนหน้าลืม ;" }
+    ],
+    2: [
+      { q: "ถ้าจะเก็บราคาสินค้า 19.50 บาท ควรใช้ตัวแปรชนิดไหน?",
+        o: ["int", "float", "char"], a: 1,
+        why: "มีทศนิยม ต้องใช้ float ถ้าใช้ int ส่วน .50 จะหายไป" },
+      { q: "int x = 7 / 2; แล้ว x มีค่าเท่าไร?",
+        o: ["3.5", "4", "3"], a: 2,
+        why: "int หาร int ได้ int ส่วนทศนิยมถูกตัดทิ้ง (ไม่ได้ปัดขึ้น)" },
+      { q: "บรรทัดไหนรับเลขจากคีย์บอร์ดใส่ตัวแปร n ได้ถูกต้อง?",
+        o: ["scanf(\"%d\", n);", "scanf(\"%d\", &n);", "printf(\"%d\", &n);"], a: 1,
+        why: "scanf ต้องรู้ที่อยู่ของตัวแปร จึงต้องมี & นำหน้า" }
+    ],
+    3: [
+      { q: "for (int i = 0; i < 3; i++) printf(\"%d \", i); แสดงผลอะไร?",
+        o: ["1 2 3", "0 1 2", "0 1 2 3"], a: 1,
+        why: "เริ่มที่ 0 และหยุดเมื่อ i < 3 เป็นเท็จ คือตอน i = 3 จึงไม่ได้พิมพ์ 3" },
+      { q: "ถ้า score = 65 โค้ด grade.c ในบทนี้จะพิมพ์อะไร?",
+        o: ["ได้เกรด A", "ผ่าน", "ไม่ผ่าน สู้ใหม่นะ"], a: 1,
+        why: "65 >= 80 เป็นเท็จ แต่ 65 >= 50 เป็นจริง จึงเข้า else if" },
+      { q: "อยากเช็คว่า x เท่ากับ 10 หรือไม่ ต้องเขียนแบบไหน?",
+        o: ["if (x = 10)", "if (x == 10)", "if (x => 10)"], a: 1,
+        why: "= ตัวเดียวคือใส่ค่า 10 ลงใน x ส่วน == คือการเปรียบเทียบ" }
+    ]
+  };
+
+  var KEY = "c-lessons-answers-v1";
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function lock(qEl, item, picked, buttons, fb) {
+    buttons.forEach(function (b, i) {
+      b.disabled = true;
+      if (i === item.a) b.classList.add("right");
+      else if (i === picked) b.classList.add("wrong");
+    });
+    var ok = picked === item.a;
+    fb.hidden = false;
+    fb.className = "fb " + (ok ? "ok" : "no");
+    fb.textContent = "";
+    fb.appendChild(document.createTextNode(ok ? "ถูกต้อง ✓ " : "ยังไม่ใช่ ✗ "));
+    fb.appendChild(el("span", null, item.why));
+  }
+
+  document.querySelectorAll(".quiz").forEach(function (box) {
+    var lesson = box.getAttribute("data-lesson");
+    QUIZ[lesson].forEach(function (item, qi) {
+      var id = lesson + "-" + qi;
+      var qEl = el("div", "q");
+      qEl.appendChild(el("div", "qt", (qi + 1) + ". " + item.q));
+      var opts = el("div", "opts");
+      var fb = el("div", "fb"); fb.hidden = true; fb.setAttribute("aria-live", "polite");
+      var buttons = item.o.map(function (text, oi) {
+        var b = el("button", "opt");
+        b.type = "button";
+        b.id = "q" + id + "-o" + oi;
+        b.appendChild(el("span", "k", "ABC"[oi]));
+        var t = el("span"); t.textContent = text; b.appendChild(t);
+        b.addEventListener("click", function () {
+          saved[id] = oi; save();
+          lock(qEl, item, oi, buttons, fb);
+          updateProgress();
+        });
+        opts.appendChild(b);
+        return b;
+      });
+      qEl.appendChild(opts);
+      qEl.appendChild(fb);
+      if (saved[id] != null) lock(qEl, item, saved[id], buttons, fb);
+      box.appendChild(qEl);
+    });
+  });
+
+  function updateProgress() {
+    var right = 0;
+    [1, 2, 3].forEach(function (L) {
+      var done = 0;
+      QUIZ[L].forEach(function (item, qi) {
+        var p = saved[L + "-" + qi];
+        if (p != null) { done++; if (p === item.a) right++; }
+      });
+      var dot = document.querySelector('[data-dot="' + L + '"]');
+      if (dot) dot.classList.toggle("done", done === QUIZ[L].length);
+    });
+    document.getElementById("score").textContent = "ตอบถูก " + right + "/9";
+  }
+  updateProgress();
+
+  // ---------- syntax highlight ----------
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  var RE = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|(^[ \t]*#[^\n]*)|\b(int|float|double|char|return|if|else|for|while|do|void|const)\b|\b(\d+(?:\.\d+)?)\b/gm;
+  document.querySelectorAll(".code pre code:not(.nohl)").forEach(function (c) {
+    var src = c.textContent, out = "", last = 0, m;
+    RE.lastIndex = 0;
+    while ((m = RE.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      var cls = m[1] ? "com" : m[2] ? "str" : m[3] ? "pre" : m[4] ? "kw" : "num";
+      out += '<span class="tok-' + cls + '">' + esc(m[0]) + "</span>";
+      last = RE.lastIndex;
+    }
+    out += esc(src.slice(last));
+    c.innerHTML = out;
+  });
+
+  // ---------- copy buttons ----------
+  document.querySelectorAll(".code button.copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var code = b.closest(".code").querySelector("code");
+      var text = code.textContent;
+      function done(msg) { b.textContent = msg; setTimeout(function () { b.textContent = "คัดลอก"; }, 1500); }
+      function fallback() {
+        var r = document.createRange(); r.selectNodeContents(code);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        done("เลือกไว้แล้ว กด Ctrl+C");
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done("คัดลอกแล้ว"); }, fallback);
+      } else fallback();
+    });
+  });
+
+  // ---------- in-page runner (JSCPP in a Web Worker, killed after a timeout) ----------
+  var LIB = "https://cdn.jsdelivr.net/npm/JSCPP@2.0.6/dist/JSCPP.es5.min.js";
+  var SAMPLE_INPUT = {
+    "plus.c": "8\n5", "age.c": "2549", "time.c": "135", "grade.c": "65",
+    "guess.c": "3\n9\n7", "table.c": "3", "evenodd.c": "7", "triangle2.c": "4"
+  };
+  var workerSrc =
+    "self.window = self;\n" +
+    "var loaded = null;\n" +
+    "try { importScripts(" + JSON.stringify(LIB) + "); loaded = true; } catch (e) { loaded = String(e); }\n" +
+    "onmessage = function (e) {\n" +
+    "  if (loaded !== true || !self.JSCPP) { postMessage({ kind: 'load', err: String(loaded) }); return; }\n" +
+    "  var out = '';\n" +
+    "  try {\n" +
+    "    var code = JSCPP.run(e.data.code, e.data.input, { stdio: { write: function (s) {\n" +
+    "      out += s; if (out.length > 20000) throw new Error('OUTPUT_LIMIT'); } } });\n" +
+    "    postMessage({ kind: 'done', out: out, exit: code });\n" +
+    "  } catch (err) { postMessage({ kind: 'error', out: out, err: String(err && err.message || err) }); }\n" +
+    "};\n";
+  var workerURL = null;
+  try { workerURL = URL.createObjectURL(new Blob([workerSrc], { type: "text/javascript" })); } catch (e) {}
+
+  function runC(code, input, cb) {
+    if (!workerURL || typeof Worker === "undefined") { cb({ kind: "load", err: "no worker" }); return; }
+    var w, finished = false;
+    try { w = new Worker(workerURL); } catch (e) { cb({ kind: "load", err: String(e) }); return; }
+    var timer = setTimeout(function () {
+      if (finished) return; finished = true; w.terminate(); cb({ kind: "timeout" });
+    }, 8000);
+    w.onmessage = function (e) { if (finished) return; finished = true; clearTimeout(timer); w.terminate(); cb(e.data); };
+    w.onerror = function (e) { if (finished) return; finished = true; clearTimeout(timer); w.terminate(); cb({ kind: "load", err: e.message || "worker error" }); };
+    w.postMessage({ code: code, input: input });
+  }
+
+  function makeRunner(block, idx) {
+    var codeEl = block.querySelector("code");
+    var fname = block.querySelector(".fname").textContent.trim();
+    var original = codeEl.textContent;
+    var needsInput = /scanf\s*\(/.test(original);
+
+    var box = el("div", "runner"); box.hidden = true;
+    var lab = el("label"); lab.setAttribute("for", "ed-" + idx);
+    lab.appendChild(document.createTextNode("แก้โค้ดได้ตรงนี้"));
+    var ta = el("textarea"); ta.id = "ed-" + idx; ta.spellcheck = false;
+    ta.setAttribute("autocapitalize", "off"); ta.setAttribute("autocomplete", "off"); ta.setAttribute("autocorrect", "off");
+    ta.value = original; ta.rows = Math.min(18, original.split("\n").length + 1);
+    lab.appendChild(ta); box.appendChild(lab);
+
+    var inTa = null;
+    if (needsInput) {
+      var lab2 = el("label"); lab2.setAttribute("for", "in-" + idx);
+      lab2.appendChild(document.createTextNode("ข้อมูลที่พิมพ์ให้โปรแกรม (บรรทัดละค่า)"));
+      inTa = el("textarea"); inTa.id = "in-" + idx; inTa.rows = 2; inTa.spellcheck = false;
+      inTa.value = SAMPLE_INPUT[fname] || "";
+      lab2.appendChild(inTa); box.appendChild(lab2);
+    }
+
+    var row = el("div", "row");
+    var go = el("button", "go", "▶ รัน"); go.type = "button";
+    var rs = el("button", "reset", "คืนโค้ดเดิม"); rs.type = "button";
+    var st = el("span", "status");
+    row.appendChild(go); row.appendChild(rs); row.appendChild(st);
+    box.appendChild(row);
+    var res = el("pre", "result"); res.setAttribute("aria-live", "polite"); res.hidden = true;
+    box.appendChild(res);
+    block.appendChild(box);
+
+    // Tab key inserts spaces instead of leaving the editor
+    ta.addEventListener("keydown", function (e) {
+      if (e.key === "Tab" && !e.shiftKey) {
+        e.preventDefault();
+        var s = ta.selectionStart, en = ta.selectionEnd;
+        ta.value = ta.value.slice(0, s) + "    " + ta.value.slice(en);
+        ta.selectionStart = ta.selectionEnd = s + 4;
+      }
+    });
+    rs.addEventListener("click", function () { ta.value = original; if (inTa) inTa.value = SAMPLE_INPUT[fname] || ""; res.hidden = true; st.textContent = ""; });
+    go.addEventListener("click", function () {
+      go.disabled = true; st.textContent = "กำลังรัน..."; res.hidden = false; res.className = "result"; res.textContent = "";
+      var input = inTa ? inTa.value.replace(/\s*$/, "") + "\n" : "";
+      runC(ta.value, input, function (r) {
+        go.disabled = false;
+        if (r.kind === "done") {
+          st.textContent = "รันเสร็จ";
+          res.textContent = r.out === "" ? "(โปรแกรมไม่ได้พิมพ์อะไรออกมา)" : r.out;
+        } else if (r.kind === "error") {
+          st.textContent = "มีข้อผิดพลาด";
+          res.className = "result err";
+          var msg = r.err === "OUTPUT_LIMIT" ? "โปรแกรมพิมพ์ออกมาเยอะเกินไป หยุดให้แล้ว อาจวนลูปไม่รู้จบ" : r.err;
+          res.textContent = (r.out ? r.out + "\n\n" : "") + msg;
+        } else if (r.kind === "timeout") {
+          st.textContent = "หยุดให้แล้ว";
+          res.className = "result err";
+          res.textContent = "โปรแกรมทำงานนานเกิน 8 วินาที อาจวนลูปไม่รู้จบ หรือ scanf รอค่าที่ยังไม่ได้ใส่ในช่องข้อมูล";
+        } else {
+          st.textContent = "รันไม่ได้";
+          res.className = "result err";
+          res.textContent = "โหลดตัวรันไม่สำเร็จ ลองเช็คอินเทอร์เน็ตแล้วกดใหม่ หรือคัดลอกโค้ดไปรันที่ onlinegdb.com/online_c_compiler";
+        }
+      });
+    });
+    return box;
+  }
+
+  document.querySelectorAll(".code:not(.norun)").forEach(function (block, idx) {
+    var codeEl = block.querySelector("code");
+    if (!codeEl || codeEl.classList.contains("nohl")) return;
+    var bar = block.querySelector(".bar");
+    var copyBtn = bar.querySelector("button.copy");
+    var acts = el("div", "acts");
+    var runBtn = el("button", "run", "▶ รัน"); runBtn.type = "button";
+    bar.insertBefore(acts, copyBtn); acts.appendChild(runBtn); acts.appendChild(copyBtn);
+    var box = null;
+    runBtn.addEventListener("click", function () {
+      if (!box) box = makeRunner(block, idx);
+      box.hidden = !box.hidden;
+      runBtn.textContent = box.hidden ? "▶ รัน" : "ซ่อน";
+      if (!box.hidden) box.querySelector("button.go").click();
+    });
+  });
+
+  // ---------- routing ----------
+  var views = ["start", "lesson-1", "lesson-2", "lesson-3"];
+  function show() {
+    var v = location.hash.slice(1);
+    if (views.indexOf(v) < 0) v = "start";
+    document.querySelectorAll("section.lesson").forEach(function (s) { s.hidden = s.dataset.view !== v; });
+    document.querySelectorAll("nav.tabs a").forEach(function (a) {
+      if (a.dataset.view === v) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", show);
+  show();
+})();
+</script>
